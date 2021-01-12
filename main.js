@@ -35,12 +35,25 @@ class Main {
     // Initiate deeplearn.js math and knn classifier objects
     this.bindPage();
 
+    // Create a video element to display video.avi
+    this.videoClip = document.createElement('video');
+    this.videoClip.setAttribute('autoplay', '');
+    this.videoClip.setAttribute('controls', '');
+    this.videoClip.setAttribute('width', '256px');
+    this.videoClip.setAttribute('height', '144px');
+    this.videoSource = document.createElement('source');
+    this.videoSource.setAttribute('src', '/assets/video.mp4')
+    this.videoSource.setAttribute('type', 'video/mp4')
+    this.videoClip.playbackRate = 2;
+
     // Create video element that will contain the webcam image
     this.video = document.createElement('video');
     this.video.setAttribute('autoplay', '');
     this.video.setAttribute('playsinline', '');
 
     // Add video element to DOM
+    document.body.appendChild(this.videoClip);
+    this.videoClip.appendChild(this.videoSource);
     document.body.appendChild(this.video);
 
     // Create training buttons and info texts    
