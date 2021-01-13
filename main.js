@@ -16,6 +16,7 @@ import "@babel/polyfill";
 import * as mobilenetModule from '@tensorflow-models/mobilenet';
 import * as tf from '@tensorflow/tfjs';
 import * as knnClassifier from '@tensorflow-models/knn-classifier';
+import { input } from "@tensorflow/tfjs";
 
 // Number of classes to classify
 const NUM_CLASSES = 3;
@@ -67,9 +68,18 @@ class Main {
       button.innerText = "Train " + i;
       div.appendChild(button);
 
+      // Create training input
+
+      const trainInput = document.createElement('input');
+      trainInput.setAttribute('name', 'Upload ' + i);
+      trainInput.setAttribute('type', 'file');
+      div.appendChild(trainInput);
+
       // Listen for mouse events when clicking the button
       button.addEventListener('mousedown', () => this.training = i);
       button.addEventListener('mouseup', () => this.training = -1);
+
+      trainInput.addEventListener('change', () => this.training = i); 
 
       // Create info text
       const infoText = document.createElement('span')
