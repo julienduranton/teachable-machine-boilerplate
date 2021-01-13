@@ -70,6 +70,7 @@ class Main {
 
       const trainInput = document.createElement("input");
       trainInput.setAttribute("name", "Upload " + i);
+      trainInput.setAttribute("id", "upload" + i);
       trainInput.setAttribute("type", "file");
       div.appendChild(trainInput);
 
@@ -139,19 +140,19 @@ class Main {
   async animate() {
     if (this.videoPlaying) {
       // Get image data from video element
-      const image = tf.fromPixels(this.video);
+      const image = tf.fromPixels(this.videoClip);
 
       let logits;
       // 'conv_preds' is the logits activation of MobileNet.
       const infer = () => this.mobilenet.infer(image, "conv_preds");
 
       // Train class if one of the buttons is held down
-      if (this.training != -1) {
-        logits = infer();
+      //if (this.training != -1) {
+      // logits = infer();
 
         // Add current image to classifier
-        this.knn.addExample(logits, this.training);
-      }
+      //  this.knn.addExample(logits, this.training);
+      //}
 
       const numClasses = this.knn.getNumClasses();
       if (numClasses > 0) {
