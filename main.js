@@ -37,7 +37,6 @@ class Main {
 
     // Create a video element to display video.avi
     this.videoClip = document.createElement("video");
-    this.videoClip.setAttribute("autoplay", "");
     this.videoClip.setAttribute("controls", "");
     this.videoClip.setAttribute("width", "256px");
     this.videoClip.setAttribute("height", "144px");
@@ -128,6 +127,7 @@ class Main {
       this.stop();
     }
     this.video.play();
+    this.videoClip.play();
     this.timer = requestAnimationFrame(this.animate.bind(this));
   }
 

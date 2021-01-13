@@ -1,5 +1,5 @@
 (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
-'use strict';
+"use strict";
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }(); // Copyright 2018 Google LLC
 //
@@ -15,17 +15,17 @@ var _createClass = function () { function defineProperties(target, props) { for 
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-require('@babel/polyfill');
+require("@babel/polyfill");
 
-var _mobilenet = require('@tensorflow-models/mobilenet');
+var _mobilenet = require("@tensorflow-models/mobilenet");
 
 var mobilenetModule = _interopRequireWildcard(_mobilenet);
 
-var _tfjs = require('@tensorflow/tfjs');
+var _tfjs = require("@tensorflow/tfjs");
 
 var tf = _interopRequireWildcard(_tfjs);
 
-var _knnClassifier = require('@tensorflow-models/knn-classifier');
+var _knnClassifier = require("@tensorflow-models/knn-classifier");
 
 var knnClassifier = _interopRequireWildcard(_knnClassifier);
 
@@ -35,7 +35,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 
 // Number of classes to classify
 var NUM_CLASSES = 3;
-// Webcam Image size. Must be 227. 
+// Webcam Image size. Must be 227.
 var IMAGE_SIZE = 227;
 // K value for KNN
 var TOPK = 10;
@@ -55,59 +55,59 @@ var Main = function () {
     this.bindPage();
 
     // Create a video element to display video.avi
-    this.videoClip = document.createElement('video');
-    this.videoClip.setAttribute('autoplay', '');
-    this.videoClip.setAttribute('controls', '');
-    this.videoClip.setAttribute('width', '256px');
-    this.videoClip.setAttribute('height', '144px');
-    this.videoSource = document.createElement('source');
-    this.videoSource.setAttribute('src', '/assets/video.mp4');
-    this.videoSource.setAttribute('type', 'video/mp4');
+    this.videoClip = document.createElement("video");
+    this.videoClip.setAttribute("autoplay", "");
+    this.videoClip.setAttribute("controls", "");
+    this.videoClip.setAttribute("width", "256px");
+    this.videoClip.setAttribute("height", "144px");
+    this.videoSource = document.createElement("source");
+    this.videoSource.setAttribute("src", "/assets/video.mp4");
+    this.videoSource.setAttribute("type", "video/mp4");
     this.videoClip.playbackRate = 2;
 
     // Create video element that will contain the webcam image
-    this.video = document.createElement('video');
-    this.video.setAttribute('autoplay', '');
-    this.video.setAttribute('playsinline', '');
+    this.video = document.createElement("video");
+    this.video.setAttribute("autoplay", "");
+    this.video.setAttribute("playsinline", "");
 
     // Add video element to DOM
     document.body.appendChild(this.videoClip);
     this.videoClip.appendChild(this.videoSource);
     document.body.appendChild(this.video);
 
-    // Create training buttons and info texts    
+    // Create training buttons and info texts
 
     var _loop = function _loop(i) {
-      var div = document.createElement('div');
+      var div = document.createElement("div");
       document.body.appendChild(div);
-      div.style.marginBottom = '10px';
+      div.style.marginBottom = "10px";
 
       // Create training button
-      var button = document.createElement('button');
+      var button = document.createElement("button");
       button.innerText = "Train " + i;
       div.appendChild(button);
 
       // Create training input
 
-      var trainInput = document.createElement('input');
-      trainInput.setAttribute('name', 'Upload ' + i);
-      trainInput.setAttribute('type', 'file');
+      var trainInput = document.createElement("input");
+      trainInput.setAttribute("name", "Upload " + i);
+      trainInput.setAttribute("type", "file");
       div.appendChild(trainInput);
 
       // Listen for mouse events when clicking the button
-      button.addEventListener('mousedown', function () {
+      button.addEventListener("mousedown", function () {
         return _this.training = i;
       });
-      button.addEventListener('mouseup', function () {
+      button.addEventListener("mouseup", function () {
         return _this.training = -1;
       });
 
-      trainInput.addEventListener('change', function () {
+      trainInput.addEventListener("change", function () {
         return _this.training = i;
       });
 
       // Create info text
-      var infoText = document.createElement('span');
+      var infoText = document.createElement("span");
       infoText.innerText = " No examples added";
       div.appendChild(infoText);
       _this.infoTexts.push(infoText);
@@ -117,23 +117,35 @@ var Main = function () {
       _loop(i);
     }
 
+    // Create a container for the start button
+    var startDiv = document.createElement("div");
+    document.body.appendChild(startDiv);
+    // Create start button
+    var startButton = document.createElement("button");
+    startButton.innerText = "Start";
+
+    startButton.addEventListener("mousedown", function () {
+      return _this.start();
+    });
+    startDiv.appendChild(startButton);
+
     // Setup webcam
     navigator.mediaDevices.getUserMedia({ video: true, audio: false }).then(function (stream) {
       _this.video.srcObject = stream;
       _this.video.width = IMAGE_SIZE;
       _this.video.height = IMAGE_SIZE;
 
-      _this.video.addEventListener('playing', function () {
+      _this.video.addEventListener("playing", function () {
         return _this.videoPlaying = true;
       });
-      _this.video.addEventListener('paused', function () {
+      _this.video.addEventListener("paused", function () {
         return _this.videoPlaying = false;
       });
     });
   }
 
   _createClass(Main, [{
-    key: 'bindPage',
+    key: "bindPage",
     value: function bindPage() {
       return regeneratorRuntime.async(function bindPage$(_context) {
         while (1) {
@@ -146,18 +158,15 @@ var Main = function () {
             case 3:
               this.mobilenet = _context.sent;
 
-
-              this.start();
-
-            case 5:
-            case 'end':
+            case 4:
+            case "end":
               return _context.stop();
           }
         }
       }, null, this);
     }
   }, {
-    key: 'start',
+    key: "start",
     value: function start() {
       if (this.timer) {
         this.stop();
@@ -166,13 +175,13 @@ var Main = function () {
       this.timer = requestAnimationFrame(this.animate.bind(this));
     }
   }, {
-    key: 'stop',
+    key: "stop",
     value: function stop() {
       this.video.pause();
       cancelAnimationFrame(this.timer);
     }
   }, {
-    key: 'animate',
+    key: "animate",
     value: function animate() {
       var _this2 = this;
 
@@ -192,7 +201,7 @@ var Main = function () {
               // 'conv_preds' is the logits activation of MobileNet.
 
               infer = function infer() {
-                return _this2.mobilenet.infer(image, 'conv_preds');
+                return _this2.mobilenet.infer(image, "conv_preds");
               };
 
               // Train class if one of the buttons is held down
@@ -222,21 +231,20 @@ var Main = function () {
 
 
               for (i = 0; i < NUM_CLASSES; i++) {
-
                 // The number of examples for each class
                 exampleCount = this.knn.getClassExampleCount();
 
                 // Make the predicted class bold
 
                 if (res.classIndex == i) {
-                  this.infoTexts[i].style.fontWeight = 'bold';
+                  this.infoTexts[i].style.fontWeight = "bold";
                 } else {
-                  this.infoTexts[i].style.fontWeight = 'normal';
+                  this.infoTexts[i].style.fontWeight = "normal";
                 }
 
                 // Update info text
                 if (exampleCount[i] > 0) {
-                  this.infoTexts[i].innerText = ' ' + exampleCount[i] + ' examples - ' + res.confidences[i] * 100 + '%';
+                  this.infoTexts[i].innerText = " " + exampleCount[i] + " examples - " + res.confidences[i] * 100 + "%";
                 }
               }
 
@@ -252,7 +260,7 @@ var Main = function () {
               this.timer = requestAnimationFrame(this.animate.bind(this));
 
             case 15:
-            case 'end':
+            case "end":
               return _context2.stop();
           }
         }
@@ -263,7 +271,7 @@ var Main = function () {
   return Main;
 }();
 
-window.addEventListener('load', function () {
+window.addEventListener("load", function () {
   return new Main();
 });
 
