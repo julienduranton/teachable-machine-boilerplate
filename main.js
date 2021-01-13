@@ -13,18 +13,17 @@
 // limitations under the License.
 
 import "@babel/polyfill";
-import * as mobilenetModule from '@tensorflow-models/mobilenet';
-import * as tf from '@tensorflow/tfjs';
-import * as knnClassifier from '@tensorflow-models/knn-classifier';
+import * as mobilenetModule from "@tensorflow-models/mobilenet";
+import * as tf from "@tensorflow/tfjs";
+import * as knnClassifier from "@tensorflow-models/knn-classifier";
 import { input } from "@tensorflow/tfjs";
 
 // Number of classes to classify
 const NUM_CLASSES = 3;
-// Webcam Image size. Must be 227. 
+// Webcam Image size. Must be 227.
 const IMAGE_SIZE = 227;
 // K value for KNN
 const TOPK = 10;
-
 
 class Main {
   constructor() {
@@ -37,75 +36,91 @@ class Main {
     this.bindPage();
 
     // Create a video element to display video.avi
-    this.videoClip = document.createElement('video');
-    this.videoClip.setAttribute('autoplay', '');
-    this.videoClip.setAttribute('controls', '');
-    this.videoClip.setAttribute('width', '256px');
-    this.videoClip.setAttribute('height', '144px');
-    this.videoSource = document.createElement('source');
-    this.videoSource.setAttribute('src', '/assets/video.mp4')
-    this.videoSource.setAttribute('type', 'video/mp4')
+    this.videoClip = document.createElement("video");
+    this.videoClip.setAttribute("autoplay", "");
+    this.videoClip.setAttribute("controls", "");
+    this.videoClip.setAttribute("width", "256px");
+    this.videoClip.setAttribute("height", "144px");
+    this.videoSource = document.createElement("source");
+    this.videoSource.setAttribute("src", "/assets/video.mp4");
+    this.videoSource.setAttribute("type", "video/mp4");
     this.videoClip.playbackRate = 2;
 
     // Create video element that will contain the webcam image
-    this.video = document.createElement('video');
-    this.video.setAttribute('autoplay', '');
-    this.video.setAttribute('playsinline', '');
+    this.video = document.createElement("video");
+    this.video.setAttribute("autoplay", "");
+    this.video.setAttribute("playsinline", "");
 
     // Add video element to DOM
     document.body.appendChild(this.videoClip);
     this.videoClip.appendChild(this.videoSource);
     document.body.appendChild(this.video);
 
-    // Create training buttons and info texts    
+    // Create training buttons and info texts
     for (let i = 0; i < NUM_CLASSES; i++) {
-      const div = document.createElement('div');
+      const div = document.createElement("div");
       document.body.appendChild(div);
-      div.style.marginBottom = '10px';
+      div.style.marginBottom = "10px";
 
       // Create training button
-      const button = document.createElement('button')
+      const button = document.createElement("button");
       button.innerText = "Train " + i;
       div.appendChild(button);
 
       // Create training input
 
-      const trainInput = document.createElement('input');
-      trainInput.setAttribute('name', 'Upload ' + i);
-      trainInput.setAttribute('type', 'file');
+      const trainInput = document.createElement("input");
+      trainInput.setAttribute("name", "Upload " + i);
+      trainInput.setAttribute("type", "file");
       div.appendChild(trainInput);
 
       // Listen for mouse events when clicking the button
-      button.addEventListener('mousedown', () => this.training = i);
-      button.addEventListener('mouseup', () => this.training = -1);
+      button.addEventListener("mousedown", () => (this.training = i));
+      button.addEventListener("mouseup", () => (this.training = -1));
 
-      trainInput.addEventListener('change', () => this.training = i); 
+      trainInput.addEventListener("change", () => (this.training = i));
 
       // Create info text
-      const infoText = document.createElement('span')
+      const infoText = document.createElement("span");
       infoText.innerText = " No examples added";
       div.appendChild(infoText);
       this.infoTexts.push(infoText);
     }
 
+    // Create a container for the start button
+    const startDiv = document.createElement("div");
+    document.body.appendChild(startDiv);
+    // Create start button
+    const startButton = document.createElement("button");
+    startButton.innerText = "Start";
+
+    startButton.addEventListener("mousedown", () => this.start());
+    startDiv.appendChild(startButton);
 
     // Setup webcam
-    navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+    navigator.mediaDevices
+      .getUserMedia({ video: true, audio: false })
       .then((stream) => {
         this.video.srcObject = stream;
         this.video.width = IMAGE_SIZE;
         this.video.height = IMAGE_SIZE;
 
-        this.video.addEventListener('playing', () => this.videoPlaying = true);
-        this.video.addEventListener('paused', () => this.videoPlaying = false);
-      })
+        this.video.addEventListener(
+          "playing",
+          () => (this.videoPlaying = true)
+        );
+        this.video.addEventListener(
+          "paused",
+          () => (this.videoPlaying = false)
+        );
+      });
   }
 
   async bindPage() {
     this.knn = knnClassifier.create();
     this.mobilenet = await mobilenetModule.load();
 
-    this.start();
+    // this.start();
   }
 
   start() {
@@ -128,38 +143,38 @@ class Main {
 
       let logits;
       // 'conv_preds' is the logits activation of MobileNet.
-      const infer = () => this.mobilenet.infer(image, 'conv_preds');
+      const infer = () => this.mobilenet.infer(image, "conv_preds");
 
       // Train class if one of the buttons is held down
       if (this.training != -1) {
         logits = infer();
 
         // Add current image to classifier
-        this.knn.addExample(logits, this.training)
+        this.knn.addExample(logits, this.training);
       }
 
       const numClasses = this.knn.getNumClasses();
       if (numClasses > 0) {
-
         // If classes have been added run predict
         logits = infer();
         const res = await this.knn.predictClass(logits, TOPK);
 
         for (let i = 0; i < NUM_CLASSES; i++) {
-
           // The number of examples for each class
           const exampleCount = this.knn.getClassExampleCount();
 
           // Make the predicted class bold
           if (res.classIndex == i) {
-            this.infoTexts[i].style.fontWeight = 'bold';
+            this.infoTexts[i].style.fontWeight = "bold";
           } else {
-            this.infoTexts[i].style.fontWeight = 'normal';
+            this.infoTexts[i].style.fontWeight = "normal";
           }
 
           // Update info text
           if (exampleCount[i] > 0) {
-            this.infoTexts[i].innerText = ` ${exampleCount[i]} examples - ${res.confidences[i] * 100}%`
+            this.infoTexts[i].innerText = ` ${exampleCount[i]} examples - ${
+              res.confidences[i] * 100
+            }%`;
           }
         }
       }
@@ -174,4 +189,4 @@ class Main {
   }
 }
 
-window.addEventListener('load', () => new Main());
+window.addEventListener("load", () => new Main());

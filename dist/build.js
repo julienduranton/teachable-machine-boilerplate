@@ -87,12 +87,23 @@ var Main = function () {
       button.innerText = "Train " + i;
       div.appendChild(button);
 
+      // Create training input
+
+      var trainInput = document.createElement('input');
+      trainInput.setAttribute('name', 'Upload ' + i);
+      trainInput.setAttribute('type', 'file');
+      div.appendChild(trainInput);
+
       // Listen for mouse events when clicking the button
       button.addEventListener('mousedown', function () {
         return _this.training = i;
       });
       button.addEventListener('mouseup', function () {
         return _this.training = -1;
+      });
+
+      trainInput.addEventListener('change', function () {
+        return _this.training = i;
       });
 
       // Create info text
