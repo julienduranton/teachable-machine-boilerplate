@@ -13,10 +13,9 @@
 // limitations under the License.
 
 import "@babel/polyfill";
+import * as knnClassifier from "@tensorflow-models/knn-classifier";
 import * as mobilenetModule from "@tensorflow-models/mobilenet";
 import * as tf from "@tensorflow/tfjs";
-import * as knnClassifier from "@tensorflow-models/knn-classifier";
-import { input } from "@tensorflow/tfjs";
 
 // Number of classes to classify
 const NUM_CLASSES = 3;
@@ -127,6 +126,7 @@ class Main {
     if (this.timer) {
       this.stop();
     }
+    await this.loadImages();
     this.video.play();
     this.videoClip.play();
     this.timer = requestAnimationFrame(this.animate.bind(this));
@@ -135,6 +135,22 @@ class Main {
   stop() {
     this.video.pause();
     cancelAnimationFrame(this.timer);
+  }
+
+  async loadImages() {
+    for (let i = 0; i < NUM_CLASSES; i++) {
+      var className = "upload" + i;
+      const uploadedImages = document.getElementById(className).files;
+      for (let j = 0; j < uploadedImages.length; j++) {
+        const image = tf.fromPixels(uploadedImages[j]);
+        let logits;
+        // 'conv_preds' is the logits activation of MobileNet.
+        const infer = () => this.mobilenet.infer(image, "conv_preds");
+        logits = infer();
+        // Add current image to classifier
+        this.knn.addExample(logits, i);
+      }
+    }
   }
 
   async animate() {
@@ -150,7 +166,7 @@ class Main {
       //if (this.training != -1) {
       // logits = infer();
 
-        // Add current image to classifier
+      // Add current image to classifier
       //  this.knn.addExample(logits, this.training);
       //}
 
