@@ -71,6 +71,7 @@ class Main {
       trainInput.setAttribute("name", "Upload " + i);
       trainInput.setAttribute("id", "upload" + i);
       trainInput.setAttribute("type", "file");
+      trainInput.setAttribute("multiple","");
       div.appendChild(trainInput);
 
       // Listen for mouse events when clicking the button
