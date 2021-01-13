@@ -122,7 +122,7 @@ class Main {
     // this.start();
   }
 
-  start() {
+  async start() {
     if (this.timer) {
       this.stop();
     }
