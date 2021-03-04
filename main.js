@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import "@babel/polyfill";
+
 import * as knnClassifier from "@tensorflow-models/knn-classifier";
 import * as mobilenetModule from "@tensorflow-models/mobilenet";
 import * as tf from "@tensorflow/tfjs";
@@ -61,24 +62,26 @@ class Main {
       div.style.marginBottom = "10px";
 
       // Create training button
-      const button = document.createElement("button");
-      button.innerText = "Train " + i;
-      div.appendChild(button);
+      // const button = document.createElement("button");
+      // button.innerText = "Train " + i;
+      // div.appendChild(button);
 
       // Create training input
-
       const trainInput = document.createElement("input");
       trainInput.setAttribute("name", "Upload " + i);
       trainInput.setAttribute("id", "upload" + i);
       trainInput.setAttribute("type", "file");
-      trainInput.setAttribute("multiple","");
+      trainInput.setAttribute("multiple", "");
       div.appendChild(trainInput);
 
       // Listen for mouse events when clicking the button
-      button.addEventListener("mousedown", () => (this.training = i));
-      button.addEventListener("mouseup", () => (this.training = -1));
+      //button.addEventListener("mousedown", () => (this.training = i));
+      //button.addEventListener("mouseup", () => (this.training = -1));
 
-      trainInput.addEventListener("change", () => (this.training = i));
+      trainInput.addEventListener("change", (e) => {
+        this.training = i;
+        console.log(e);
+      });
 
       // Create info text
       const infoText = document.createElement("span");
@@ -90,12 +93,17 @@ class Main {
     // Create a container for the start button
     const startDiv = document.createElement("div");
     document.body.appendChild(startDiv);
+    // Start prediction
+    const trainButton = document.createElement("button");
+    trainButton.innerText = "Train";
     // Create start button
     const startButton = document.createElement("button");
     startButton.innerText = "Start";
 
     startButton.addEventListener("mousedown", () => this.start());
+    trainButton.addEventListener("mousedown", () => this.train());
     startDiv.appendChild(startButton);
+    startDiv.appendChild(trainButton);
 
     // Setup webcam
     navigator.mediaDevices
@@ -119,15 +127,15 @@ class Main {
   async bindPage() {
     this.knn = knnClassifier.create();
     this.mobilenet = await mobilenetModule.load();
+    console.log(this.mobilenet);
 
     // this.start();
   }
 
-  async start() {
+  start() {
     if (this.timer) {
       this.stop();
     }
-    await this.loadImages();
     this.video.play();
     this.videoClip.play();
     this.timer = requestAnimationFrame(this.animate.bind(this));
@@ -138,18 +146,34 @@ class Main {
     cancelAnimationFrame(this.timer);
   }
 
+  async train() {
+    await this.loadImages();
+  }
+
   async loadImages() {
+    console.log(this.mobilenet);
     for (let i = 0; i < NUM_CLASSES; i++) {
       var className = "upload" + i;
-      const uploadedImages = document.getElementById(className).files;
-      for (let j = 0; j < uploadedImages.length; j++) {
-        const image = tf.fromPixels(uploadedImages[j]);
-        let logits;
+      const uploadedFiles = document.getElementById(className).files;
+      for (let j = 0; j < uploadedFiles.length; j++) {
+
+        let image = new Image();
+        let uploadedImage = new Image();
+
         // 'conv_preds' is the logits activation of MobileNet.
-        const infer = () => this.mobilenet.infer(image, "conv_preds");
-        logits = infer();
-        // Add current image to classifier
-        this.knn.addExample(logits, i);
+        let logits;
+        let infer;
+        const mobilenet = this.mobilenet;
+        const knn = this.knn;
+
+        uploadedImage.onload = function() {
+          image.src = this.src;
+          infer = () => mobilenet.infer(image, "conv_preds")
+          logits = infer();
+          // Add current image to classifier
+          knn.addExample(logits, i);
+        }
+        uploadedImage.src= URL.createObjectURL(uploadedFiles[j]);
       }
     }
   }
@@ -168,10 +192,11 @@ class Main {
       // logits = infer();
 
       // Add current image to classifier
-      //  this.knn.addExample(logits, this.training);
-      //}
+      // this.knn.addExample(logits, );
+      // }
 
       const numClasses = this.knn.getNumClasses();
+      console.log(numClasses);
       if (numClasses > 0) {
         // If classes have been added run predict
         logits = infer();

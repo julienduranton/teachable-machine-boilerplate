@@ -17,6 +17,10 @@ var _createClass = function () { function defineProperties(target, props) { for 
 
 require("@babel/polyfill");
 
+var _knnClassifier = require("@tensorflow-models/knn-classifier");
+
+var knnClassifier = _interopRequireWildcard(_knnClassifier);
+
 var _mobilenet = require("@tensorflow-models/mobilenet");
 
 var mobilenetModule = _interopRequireWildcard(_mobilenet);
@@ -24,10 +28,6 @@ var mobilenetModule = _interopRequireWildcard(_mobilenet);
 var _tfjs = require("@tensorflow/tfjs");
 
 var tf = _interopRequireWildcard(_tfjs);
-
-var _knnClassifier = require("@tensorflow-models/knn-classifier");
-
-var knnClassifier = _interopRequireWildcard(_knnClassifier);
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } else { var newObj = {}; if (obj != null) { for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) newObj[key] = obj[key]; } } newObj.default = obj; return newObj; } }
 
@@ -90,7 +90,9 @@ var Main = function () {
 
       var trainInput = document.createElement("input");
       trainInput.setAttribute("name", "Upload " + i);
+      trainInput.setAttribute("id", "upload" + i);
       trainInput.setAttribute("type", "file");
+      trainInput.setAttribute("multiple", "");
       div.appendChild(trainInput);
 
       // Listen for mouse events when clicking the button
@@ -167,12 +169,27 @@ var Main = function () {
   }, {
     key: "start",
     value: function start() {
-      if (this.timer) {
-        this.stop();
-      }
-      this.video.play();
-      this.videoClip.play();
-      this.timer = requestAnimationFrame(this.animate.bind(this));
+      return regeneratorRuntime.async(function start$(_context2) {
+        while (1) {
+          switch (_context2.prev = _context2.next) {
+            case 0:
+              if (this.timer) {
+                this.stop();
+              }
+              _context2.next = 3;
+              return regeneratorRuntime.awrap(this.loadImages());
+
+            case 3:
+              this.video.play();
+              this.videoClip.play();
+              this.timer = requestAnimationFrame(this.animate.bind(this));
+
+            case 6:
+            case "end":
+              return _context2.stop();
+          }
+        }
+      }, null, this);
     }
   }, {
     key: "stop",
@@ -181,53 +198,91 @@ var Main = function () {
       cancelAnimationFrame(this.timer);
     }
   }, {
-    key: "animate",
-    value: function animate() {
+    key: "loadImages",
+    value: function loadImages() {
       var _this2 = this;
 
-      var image, logits, infer, numClasses, res, i, exampleCount;
-      return regeneratorRuntime.async(function animate$(_context2) {
+      var i, className, uploadedImages, _loop2, j;
+
+      return regeneratorRuntime.async(function loadImages$(_context3) {
         while (1) {
-          switch (_context2.prev = _context2.next) {
+          switch (_context3.prev = _context3.next) {
+            case 0:
+              for (i = 0; i < NUM_CLASSES; i++) {
+                className = "upload" + i;
+                uploadedImages = document.getElementById(className).files;
+
+                _loop2 = function _loop2(j) {
+                  var image = tf.fromPixels(uploadedImages[j]);
+                  var logits = void 0;
+                  // 'conv_preds' is the logits activation of MobileNet.
+                  var infer = function infer() {
+                    return _this2.mobilenet.infer(image, "conv_preds");
+                  };
+                  logits = infer();
+                  // Add current image to classifier
+                  _this2.knn.addExample(logits, i);
+                };
+
+                for (j = 0; j < uploadedImages.length; j++) {
+                  _loop2(j);
+                }
+              }
+
+            case 1:
+            case "end":
+              return _context3.stop();
+          }
+        }
+      }, null, this);
+    }
+  }, {
+    key: "animate",
+    value: function animate() {
+      var _this3 = this;
+
+      var _image, logits, infer, numClasses, res, i, exampleCount;
+
+      return regeneratorRuntime.async(function animate$(_context4) {
+        while (1) {
+          switch (_context4.prev = _context4.next) {
             case 0:
               if (!this.videoPlaying) {
-                _context2.next = 14;
+                _context4.next = 13;
                 break;
               }
 
               // Get image data from video element
-              image = tf.fromPixels(this.video);
+              _image = tf.fromPixels(this.videoClip);
               logits = void 0;
               // 'conv_preds' is the logits activation of MobileNet.
 
               infer = function infer() {
-                return _this2.mobilenet.infer(image, "conv_preds");
+                return _this3.mobilenet.infer(_image, "conv_preds");
               };
 
               // Train class if one of the buttons is held down
+              //if (this.training != -1) {
+              // logits = infer();
 
-
-              if (this.training != -1) {
-                logits = infer();
-
-                // Add current image to classifier
-                this.knn.addExample(logits, this.training);
-              }
+              // Add current image to classifier
+              //  this.knn.addExample(logits, this.training);
+              //}
 
               numClasses = this.knn.getNumClasses();
 
               if (!(numClasses > 0)) {
-                _context2.next = 12;
+                _context4.next = 11;
                 break;
               }
 
               // If classes have been added run predict
               logits = infer();
-              _context2.next = 10;
+              _context4.next = 9;
               return regeneratorRuntime.awrap(this.knn.predictClass(logits, TOPK));
 
-            case 10:
-              res = _context2.sent;
+            case 9:
+              res = _context4.sent;
 
 
               for (i = 0; i < NUM_CLASSES; i++) {
@@ -248,20 +303,20 @@ var Main = function () {
                 }
               }
 
-            case 12:
+            case 11:
 
               // Dispose image when done
-              image.dispose();
+              _image.dispose();
               if (logits != null) {
                 logits.dispose();
               }
 
-            case 14:
+            case 13:
               this.timer = requestAnimationFrame(this.animate.bind(this));
 
-            case 15:
+            case 14:
             case "end":
-              return _context2.stop();
+              return _context4.stop();
           }
         }
       }, null, this);
