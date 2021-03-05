@@ -132,20 +132,6 @@ var Main = function () {
     });
     startDiv.appendChild(startButton);
     startDiv.appendChild(trainButton);
-
-    // Setup webcam
-    navigator.mediaDevices.getUserMedia({ video: true, audio: false }).then(function (stream) {
-      _this.video.srcObject = stream;
-      _this.video.width = IMAGE_SIZE;
-      _this.video.height = IMAGE_SIZE;
-
-      _this.video.addEventListener("playing", function () {
-        return _this.videoPlaying = true;
-      });
-      _this.video.addEventListener("paused", function () {
-        return _this.videoPlaying = false;
-      });
-    });
   }
 
   _createClass(Main, [{
@@ -163,8 +149,6 @@ var Main = function () {
               this.mobilenet = _context.sent;
 
               console.log(this.mobilenet);
-
-              // this.start();
 
             case 5:
             case "end":
