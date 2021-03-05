@@ -82,12 +82,11 @@ var Main = function () {
       div.style.marginBottom = "10px";
 
       // Create training button
-      var button = document.createElement("button");
-      button.innerText = "Train " + i;
-      div.appendChild(button);
+      // const button = document.createElement("button");
+      // button.innerText = "Train " + i;
+      // div.appendChild(button);
 
       // Create training input
-
       var trainInput = document.createElement("input");
       trainInput.setAttribute("name", "Upload " + i);
       trainInput.setAttribute("id", "upload" + i);
@@ -96,15 +95,12 @@ var Main = function () {
       div.appendChild(trainInput);
 
       // Listen for mouse events when clicking the button
-      button.addEventListener("mousedown", function () {
-        return _this.training = i;
-      });
-      button.addEventListener("mouseup", function () {
-        return _this.training = -1;
-      });
+      //button.addEventListener("mousedown", () => (this.training = i));
+      //button.addEventListener("mouseup", () => (this.training = -1));
 
-      trainInput.addEventListener("change", function () {
-        return _this.training = i;
+      trainInput.addEventListener("change", function (e) {
+        _this.training = i;
+        console.log(e);
       });
 
       // Create info text
@@ -121,6 +117,9 @@ var Main = function () {
     // Create a container for the start button
     var startDiv = document.createElement("div");
     document.body.appendChild(startDiv);
+    // Start prediction
+    var trainButton = document.createElement("button");
+    trainButton.innerText = "Train";
     // Create start button
     var startButton = document.createElement("button");
     startButton.innerText = "Start";
@@ -128,7 +127,11 @@ var Main = function () {
     startButton.addEventListener("mousedown", function () {
       return _this.start();
     });
+    trainButton.addEventListener("mousedown", function () {
+      return _this.train();
+    });
     startDiv.appendChild(startButton);
+    startDiv.appendChild(trainButton);
 
     // Setup webcam
     navigator.mediaDevices.getUserMedia({ video: true, audio: false }).then(function (stream) {
@@ -159,7 +162,11 @@ var Main = function () {
             case 3:
               this.mobilenet = _context.sent;
 
-            case 4:
+              console.log(this.mobilenet);
+
+              // this.start();
+
+            case 5:
             case "end":
               return _context.stop();
           }
@@ -169,27 +176,12 @@ var Main = function () {
   }, {
     key: "start",
     value: function start() {
-      return regeneratorRuntime.async(function start$(_context2) {
-        while (1) {
-          switch (_context2.prev = _context2.next) {
-            case 0:
-              if (this.timer) {
-                this.stop();
-              }
-              _context2.next = 3;
-              return regeneratorRuntime.awrap(this.loadImages());
-
-            case 3:
-              this.video.play();
-              this.videoClip.play();
-              this.timer = requestAnimationFrame(this.animate.bind(this));
-
-            case 6:
-            case "end":
-              return _context2.stop();
-          }
-        }
-      }, null, this);
+      if (this.timer) {
+        this.stop();
+      }
+      this.video.play();
+      this.videoClip.play();
+      this.timer = requestAnimationFrame(this.animate.bind(this));
     }
   }, {
     key: "stop",
@@ -198,38 +190,73 @@ var Main = function () {
       cancelAnimationFrame(this.timer);
     }
   }, {
+    key: "train",
+    value: function train() {
+      return regeneratorRuntime.async(function train$(_context2) {
+        while (1) {
+          switch (_context2.prev = _context2.next) {
+            case 0:
+              _context2.next = 2;
+              return regeneratorRuntime.awrap(this.loadImages());
+
+            case 2:
+            case "end":
+              return _context2.stop();
+          }
+        }
+      }, null, this);
+    }
+  }, {
     key: "loadImages",
     value: function loadImages() {
       var _this2 = this;
 
-      var i, className, uploadedImages, _loop2, j;
+      var _loop2, i, className;
 
       return regeneratorRuntime.async(function loadImages$(_context3) {
         while (1) {
           switch (_context3.prev = _context3.next) {
             case 0:
-              for (i = 0; i < NUM_CLASSES; i++) {
-                className = "upload" + i;
-                uploadedImages = document.getElementById(className).files;
+              console.log(this.mobilenet);
 
-                _loop2 = function _loop2(j) {
-                  var image = tf.fromPixels(uploadedImages[j]);
-                  var logits = void 0;
+              _loop2 = function _loop2(i) {
+                className = "upload" + i;
+
+                var uploadedFiles = document.getElementById(className).files;
+
+                var _loop3 = function _loop3(j) {
+
+                  var image = new Image();
+                  var uploadedImage = new Image();
+
                   // 'conv_preds' is the logits activation of MobileNet.
-                  var infer = function infer() {
-                    return _this2.mobilenet.infer(image, "conv_preds");
+                  var logits = void 0;
+                  var infer = void 0;
+                  var mobilenet = _this2.mobilenet;
+                  var knn = _this2.knn;
+
+                  uploadedImage.onload = function () {
+                    image.src = this.src;
+                    infer = function infer() {
+                      return mobilenet.infer(image, "conv_preds");
+                    };
+                    logits = infer();
+                    // Add current image to classifier
+                    knn.addExample(logits, i);
                   };
-                  logits = infer();
-                  // Add current image to classifier
-                  _this2.knn.addExample(logits, i);
+                  uploadedImage.src = URL.createObjectURL(uploadedFiles[j]);
                 };
 
-                for (j = 0; j < uploadedImages.length; j++) {
-                  _loop2(j);
+                for (var j = 0; j < uploadedFiles.length; j++) {
+                  _loop3(j);
                 }
+              };
+
+              for (i = 0; i < NUM_CLASSES; i++) {
+                _loop2(i);
               }
 
-            case 1:
+            case 3:
             case "end":
               return _context3.stop();
           }
@@ -241,23 +268,23 @@ var Main = function () {
     value: function animate() {
       var _this3 = this;
 
-      var _image, logits, infer, numClasses, res, i, exampleCount;
+      var _image, _logits, _infer, numClasses, res, _i, exampleCount;
 
       return regeneratorRuntime.async(function animate$(_context4) {
         while (1) {
           switch (_context4.prev = _context4.next) {
             case 0:
               if (!this.videoPlaying) {
-                _context4.next = 13;
+                _context4.next = 14;
                 break;
               }
 
               // Get image data from video element
               _image = tf.fromPixels(this.videoClip);
-              logits = void 0;
+              _logits = void 0;
               // 'conv_preds' is the logits activation of MobileNet.
 
-              infer = function infer() {
+              _infer = function _infer() {
                 return _this3.mobilenet.infer(_image, "conv_preds");
               };
 
@@ -266,55 +293,57 @@ var Main = function () {
               // logits = infer();
 
               // Add current image to classifier
-              //  this.knn.addExample(logits, this.training);
-              //}
+              // this.knn.addExample(logits, );
+              // }
 
               numClasses = this.knn.getNumClasses();
 
+              console.log(numClasses);
+
               if (!(numClasses > 0)) {
-                _context4.next = 11;
+                _context4.next = 12;
                 break;
               }
 
               // If classes have been added run predict
-              logits = infer();
-              _context4.next = 9;
-              return regeneratorRuntime.awrap(this.knn.predictClass(logits, TOPK));
+              _logits = _infer();
+              _context4.next = 10;
+              return regeneratorRuntime.awrap(this.knn.predictClass(_logits, TOPK));
 
-            case 9:
+            case 10:
               res = _context4.sent;
 
 
-              for (i = 0; i < NUM_CLASSES; i++) {
+              for (_i = 0; _i < NUM_CLASSES; _i++) {
                 // The number of examples for each class
                 exampleCount = this.knn.getClassExampleCount();
 
                 // Make the predicted class bold
 
-                if (res.classIndex == i) {
-                  this.infoTexts[i].style.fontWeight = "bold";
+                if (res.classIndex == _i) {
+                  this.infoTexts[_i].style.fontWeight = "bold";
                 } else {
-                  this.infoTexts[i].style.fontWeight = "normal";
+                  this.infoTexts[_i].style.fontWeight = "normal";
                 }
 
                 // Update info text
-                if (exampleCount[i] > 0) {
-                  this.infoTexts[i].innerText = " " + exampleCount[i] + " examples - " + res.confidences[i] * 100 + "%";
+                if (exampleCount[_i] > 0) {
+                  this.infoTexts[_i].innerText = " " + exampleCount[_i] + " examples - " + res.confidences[_i] * 100 + "%";
                 }
               }
 
-            case 11:
+            case 12:
 
               // Dispose image when done
               _image.dispose();
-              if (logits != null) {
-                logits.dispose();
+              if (_logits != null) {
+                _logits.dispose();
               }
 
-            case 13:
+            case 14:
               this.timer = requestAnimationFrame(this.animate.bind(this));
 
-            case 14:
+            case 15:
             case "end":
               return _context4.stop();
           }
