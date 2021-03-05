@@ -113,11 +113,20 @@ class Main {
   }
 
   start() {
+    try {
+      this.knn = loadClassifierFromLocalStorage();
+      console.log(loadClassifierFromLocalStorage());
+      console.log("Cached data loaded successfully");
+    } catch (error) {
+      console.log(error);
+    }
+    console.log(this.knn);
     if (this.timer) {
       this.stop();
     }
     this.video.play();
     this.videoClip.play();
+    this.videoPlaying = true;
     this.timer = requestAnimationFrame(this.animate.bind(this));
   }
 
@@ -128,6 +137,7 @@ class Main {
 
   async train() {
     await this.loadImages();
+    saveClassifierInLocalStorage(this.knn);
   }
 
   async loadImages() {
@@ -159,6 +169,7 @@ class Main {
   }
 
   async animate() {
+    this.knn = loadClassifierFromLocalStorage();
     if (this.videoPlaying) {
       // Get image data from video element
       const image = tf.fromPixels(this.videoClip);
@@ -213,3 +224,56 @@ class Main {
 }
 
 window.addEventListener("load", () => new Main());
+
+
+async function toDatasetObject(dataset) {
+  const result = await Promise.all(
+    Object.entries(dataset).map(async ([classId,value], index) => {
+      const data = await value.data();
+      return {
+        classId: Number(classId),
+        data: Array.from(data),
+        shape: value.shape
+      };
+   })
+  );
+  return result;
+};
+
+function fromDatasetObject(datasetObject) {
+  return Object.entries(datasetObject).reduce((result, [indexString, {data, shape}]) => {
+    const tensor = tf.tensor2d(data, shape);
+    const index = Number(indexString);
+    result[index] = tensor;
+    return result;
+  }, {});
+}
+
+const storageKey = "knnClassifier";
+
+async function saveClassifierInLocalStorage(classifier) {
+  console.log('Inside');
+  console.log(classifier);
+  const dataset = classifier.getClassifierDataset();
+  console.log(dataset);
+  const datasetOjb = await toDatasetObject(dataset);
+  console.log(datasetOjb);
+  const jsonStr = await JSON.stringify(dataset);
+  console.log("I love Json strings")
+  console.log(jsonStr);
+  //can be change to other source
+  localStorage.setItem(storageKey, jsonStr);
+}
+
+// To be used later to load the knn
+function loadClassifierFromLocalStorage() {
+  const classifier = knnClassifier.create();
+  const dataset = localStorage.getItem(storageKey);
+  if (dataset) {
+    console.log("I love Json")
+    const datasetObj = JSON.parse(datasetJson);
+    //const dataset = fromDatasetObject(datasetObj);
+    classifier.setClassifierDataset(datasetObj);
+  }
+  return classifier;
+}
