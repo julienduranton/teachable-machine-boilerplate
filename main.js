@@ -40,6 +40,8 @@ class Main {
     this.videoClip.setAttribute("controls", "");
     this.videoClip.setAttribute("width", "256px");
     this.videoClip.setAttribute("height", "144px");
+
+    // Import the video
     this.videoSource = document.createElement("source");
     this.videoSource.setAttribute("src", "/assets/video.mp4");
     this.videoSource.setAttribute("type", "video/mp4");
@@ -61,26 +63,24 @@ class Main {
       document.body.appendChild(div);
       div.style.marginBottom = "10px";
 
-      // Create training button
-      // const button = document.createElement("button");
-      // button.innerText = "Train " + i;
-      // div.appendChild(button);
-
-      // Create training input
+      // Create training inputs
       const trainInput = document.createElement("input");
       trainInput.setAttribute("name", "Upload " + i);
       trainInput.setAttribute("id", "upload" + i);
       trainInput.setAttribute("type", "file");
+      trainInput.setAttribute("webkitdirectory", ""); // Import folders (unavailable IE)
       trainInput.setAttribute("multiple", "");
       div.appendChild(trainInput);
 
-      // Listen for mouse events when clicking the button
-      //button.addEventListener("mousedown", () => (this.training = i));
-      //button.addEventListener("mouseup", () => (this.training = -1));
-
+      // On uploading files
       trainInput.addEventListener("change", (e) => {
-        this.training = i;
-        console.log(e);
+        // Make sure there are less than 200 files
+        if (e.target.files.length > 200) {
+          alert("Maximum 200 files");
+          document.getElementById("upload" + i).value = "";
+        } else {
+          this.training = i;
+        }
       });
 
       // Create info text
@@ -93,13 +93,17 @@ class Main {
     // Create a container for the start button
     const startDiv = document.createElement("div");
     document.body.appendChild(startDiv);
-    // Start prediction
+
+    // Train prediction button
     const trainButton = document.createElement("button");
     trainButton.innerText = "Train";
+
     // Create start button
     const startButton = document.createElement("button");
-    startButton.innerText = "Start";
+    startButton.setAttribute("id", "startBtn");
+    startButton.innerText = "Start prediction";
 
+    // Append the train/start buttons to document
     startButton.addEventListener("mousedown", () => this.start());
     trainButton.addEventListener("mousedown", () => this.train());
     startDiv.appendChild(startButton);
@@ -113,26 +117,33 @@ class Main {
   }
 
   start() {
-    try {
-      this.knn = loadClassifierFromLocalStorage();
-      console.log(loadClassifierFromLocalStorage());
-      console.log("Cached data loaded successfully");
-    } catch (error) {
-      console.log(error);
-    }
-    console.log(this.knn);
-    if (this.timer) {
-      this.stop();
-    }
-    this.video.play();
-    this.videoClip.play();
-    this.videoPlaying = true;
-    this.timer = requestAnimationFrame(this.animate.bind(this));
+      try {
+        this.knn = loadClassifierFromLocalStorage();
+        console.log(loadClassifierFromLocalStorage());
+        console.log("Cached data loaded successfully");
+      } catch (error) {
+        console.log(error);
+      }
+      console.log(this.knn);
+      if (this.timer) {
+        this.stop();
+      }
+      this.video.play();
+      this.videoClip.play();
+      this.videoPlaying = true;
+      this.timer = requestAnimationFrame(this.animate.bind(this));
+      document.querySelector("#startBtn").innerText = "Stop";
+      document.querySelector("#startBtn").removeEventListener("mousedown", () => this.start());
+      document.querySelector("#startBtn").addEventListener("mousedown", () => this.stop());
   }
 
   stop() {
+    console.log("stop");
     this.video.pause();
     cancelAnimationFrame(this.timer);
+    document.querySelector("#startBtn").innerText = "Start prediction";
+    document.querySelector("#startBtn").removeEventListener("mousedown", () => this.stop());
+    document.querySelector("#startBtn").addEventListener("mousedown", () => this.start());
   }
 
   async train() {
@@ -146,7 +157,6 @@ class Main {
       var className = "upload" + i;
       const uploadedFiles = document.getElementById(className).files;
       for (let j = 0; j < uploadedFiles.length; j++) {
-
         let image = new Image();
         let uploadedImage = new Image();
 
@@ -156,14 +166,14 @@ class Main {
         const mobilenet = this.mobilenet;
         const knn = this.knn;
 
-        uploadedImage.onload = function() {
+        uploadedImage.onload = function () {
           image.src = this.src;
-          infer = () => mobilenet.infer(image, "conv_preds")
+          infer = () => mobilenet.infer(image, "conv_preds");
           logits = infer();
           // Add current image to classifier
           knn.addExample(logits, i);
-        }
-        uploadedImage.src= URL.createObjectURL(uploadedFiles[j]);
+        };
+        uploadedImage.src = URL.createObjectURL(uploadedFiles[j]);
       }
     }
   }
@@ -174,20 +184,12 @@ class Main {
       // Get image data from video element
       const image = tf.fromPixels(this.videoClip);
 
-      let logits;
       // 'conv_preds' is the logits activation of MobileNet.
+      let logits;
       const infer = () => this.mobilenet.infer(image, "conv_preds");
 
-      // Train class if one of the buttons is held down
-      //if (this.training != -1) {
-      // logits = infer();
-
-      // Add current image to classifier
-      // this.knn.addExample(logits, );
-      // }
-
       const numClasses = this.knn.getNumClasses();
-      console.log(numClasses);
+
       if (numClasses > 0) {
         // If classes have been added run predict
         logits = infer();
@@ -225,41 +227,43 @@ class Main {
 
 window.addEventListener("load", () => new Main());
 
-
 async function toDatasetObject(dataset) {
   const result = await Promise.all(
-    Object.entries(dataset).map(async ([classId,value], index) => {
+    Object.entries(dataset).map(async ([classId, value], index) => {
       const data = await value.data();
       return {
         classId: Number(classId),
         data: Array.from(data),
-        shape: value.shape
+        shape: value.shape,
       };
-   })
+    })
   );
   return result;
-};
+}
 
 function fromDatasetObject(datasetObject) {
-  return Object.entries(datasetObject).reduce((result, [indexString, {data, shape}]) => {
-    const tensor = tf.tensor2d(data, shape);
-    const index = Number(indexString);
-    result[index] = tensor;
-    return result;
-  }, {});
+  return Object.entries(datasetObject).reduce(
+    (result, [indexString, { data, shape }]) => {
+      const tensor = tf.tensor2d(data, shape);
+      const index = Number(indexString);
+      result[index] = tensor;
+      return result;
+    },
+    {}
+  );
 }
 
 const storageKey = "knnClassifier";
 
 async function saveClassifierInLocalStorage(classifier) {
-  console.log('Inside');
+  console.log("Inside");
   console.log(classifier);
   const dataset = classifier.getClassifierDataset();
   console.log(dataset);
   const datasetOjb = await toDatasetObject(dataset);
   console.log(datasetOjb);
   const jsonStr = await JSON.stringify(dataset);
-  console.log("I love Json strings")
+  console.log("I love Json strings");
   console.log(jsonStr);
   //can be change to other source
   localStorage.setItem(storageKey, jsonStr);
@@ -270,8 +274,8 @@ function loadClassifierFromLocalStorage() {
   const classifier = knnClassifier.create();
   const dataset = localStorage.getItem(storageKey);
   if (dataset) {
-    console.log("I love Json")
-    const datasetObj = JSON.parse(datasetJson);
+    console.log("I love Json");
+    const datasetObj = JSON.parse(dataset);
     //const dataset = fromDatasetObject(datasetObj);
     classifier.setClassifierDataset(datasetObj);
   }
