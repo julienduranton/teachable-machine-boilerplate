@@ -126,6 +126,7 @@ class Main {
 
   async bindPage() {
     this.knn = knnClassifier.create();
+    this.knn.getClassifierDataset()
     this.mobilenet = await mobilenetModule.load();
     console.log(this.mobilenet);
 
@@ -148,6 +149,8 @@ class Main {
 
   async train() {
     await this.loadImages();
+    console.log("Training Done !");
+    this.knn.summary();
   }
 
   async loadImages() {
